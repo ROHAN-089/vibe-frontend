@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Location Stability Test</title>
+    <style>
+      body {
+        font-family: "Courier New", monospace;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #00ff00;
+      }
+      h1 {
+        color: #00ff00;
+      }
+      .test-result {
+        background: #2a2a2a;
+        padding: 15px;
+        margin: 10px 0;
+        border-left: 4px solid #00ff00;
+      }
+      .pass {
+        border-left-color: #00ff00;
+      }
+      .fail {
+        border-left-color: #ff0000;
+        color: #ff0000;
+      }
+      button {
+        background: #00ff00;
+        color: #000;
+        border: none;
+        padding: 10px 20px;
+        margin: 10px 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button:hover {
+        background: #00cc00;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 20px 0;
+      }
+      .stat-box {
+        background: #2a2a2a;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .code {
+        background: #000;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Location Stability Test</h1>
+    <p>This tests the 3-layer location stabilization system:</p>
+    <ol>
+      <li><strong>Snap to Grid</strong> - Coordinates rounded to 2 decimals</li>
+      <li>
+        <strong>Session Stickiness</strong> - Geohash locked in sessionStorage
+      </li>
+      <li><strong>Movement Threshold</strong> - Only update if moved > 2km</li>
+    </ol>
+
+    <div style="margin: 20px 0">
+      <button onclick="testLocation()">🎯 Get Location (First Time)</button>
+      <button onclick="testLocation()">
+        🔄 Get Location Again (Should Be Stable)
+      </button>
+      <button onclick="forceRefresh()">💥 Force Refresh</button>
+      <button onclick="clearResults()">🧹 Clear</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <strong>📍 Fetches:</strong> <span id="fetchCount">0</span>
+      </div>
+      <div class="stat-box">
+        <strong>🔒 Stable Geohash:</strong> <span id="stableHash">-</span>
+      </div>
+      <div class="stat-box">
+        <strong>✅ Stability:</strong> <span id="stability">-</span>
+      </div>
+      <div class="stat-box">
+        <strong>📊 Unique Hashes:</strong> <span id="uniqueCount">0</span>
+      </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+      import {
+        getCurrentLocation,
+        snapCoordinate,
+        forceRefreshLocation,
+      } from "./src/utils/location.js";
+
+      let fetchCount = 0;
+      let geohashes = new Set();
+      let lastGeohash = null;
+
+      window.testLocation = async function () {
+        fetchCount++;
+        document.getElementById("fetchCount").textContent = fetchCount;
+
+        try {
+          const location = await getCurrentLocation();
+
+          geohashes.add(location.geohash);
+          document.getElementById("uniqueCount").textContent = geohashes.size;
+
+          const isStable = lastGeohash === location.geohash;
+          lastGeohash = location.geohash;
+
+          document.getElementById("stableHash").textContent = location.geohash;
+
+          if (fetchCount > 1) {
+            const stabilityPct = Math.round(
+              (1 - (geohashes.size - 1) / (fetchCount - 1)) * 100,
+            );
+            document.getElementById("stability").textContent =
+              stabilityPct + "%";
+          }
+
+          const resultDiv = document.createElement("div");
+          resultDiv.className =
+            "test-result " + (isStable && fetchCount > 1 ? "pass" : "");
+          resultDiv.innerHTML = `
+                    <strong>Fetch #${fetchCount}</strong> ${isStable && fetchCount > 1 ? "✅ STABLE" : "🔵 NEW"}<br>
+                    Raw: <span class="code">${location.lat.toFixed(6)}, ${location.lon.toFixed(6)}</span><br>
+                    Snapped: <span class="code">${location.lat}, ${location.lon}</span><br>
+                    Geohash: <span class="code">${location.geohash}</span>
+                `;
+          document.getElementById("results").prepend(resultDiv);
+        } catch (error) {
+          const resultDiv = document.createElement("div");
+          resultDiv.className = "test-result fail";
+          resultDiv.textContent = "❌ Error: " + error.message;
+          document.getElementById("results").prepend(resultDiv);
+        }
+      };
+
+      window.forceRefresh = async function () {
+        await forceRefreshLocation();
+        const resultDiv = document.createElement("div");
+        resultDiv.className = "test-result";
+        resultDiv.textContent =
+          "🔄 Session cache cleared - next fetch will be fresh";
+        document.getElementById("results").prepend(resultDiv);
+      };
+
+      window.clearResults = function () {
+        document.getElementById("results").innerHTML = "";
+        fetchCount = 0;
+        geohashes = new Set();
+        lastGeohash = null;
+        document.getElementById("fetchCount").textContent = "0";
+        document.getElementById("stableHash").textContent = "-";
+        document.getElementById("stability").textContent = "-";
+        document.getElementById("uniqueCount").textContent = "0";
+      };
+    </script>
+
+    <div
+      style="
+        margin-top: 40px;
+        padding: 20px;
+        background: #2a2a2a;
+        border-radius: 5px;
+      "
+    >
+      <h3>✅ Expected Behavior:</h3>
+      <ul>
+        <li>
+          <strong>First click:</strong> Gets location, locks geohash in session
+        </li>
+        <li><strong>Second+ clicks:</strong> Returns SAME geohash (stable!)</li>
+        <li><strong>Stability %:</strong> Should be 100% after 2nd fetch</li>
+        <li><strong>Unique Hashes:</strong> Should stay at 1 (no jitter)</li>
+      </ul>
+      <h3>❌ Old Behavior (Without Fix):</h3>
+      <ul>
+        <li>Every fetch returns slightly different coordinates</li>
+        <li>Geohash flips between 2-3 values</li>
+        <li>Stability ~50-70%</li>
+        <li>Room list flickers and changes</li>
+      </ul>
+    </div>
+  </body>
+</html>

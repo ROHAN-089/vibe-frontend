@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-discord-bg: #313338;
+  --color-discord-sidebar: #2B2D31;
+  --color-discord-element: #383A40;
+  --color-discord-hover: #404249;
+  --color-discord-divider: #1E1F22;
+  --color-discord-text: #DBDEE1;
+  --color-discord-muted: #949BA4;
+  --color-discord-brand: #5865F2;
+  --color-discord-green: #23A559;
+  --color-discord-red: #DA373C;
+  --color-discord-yellow: #F0B232;
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@layer base {
+  body {
+    @apply bg-discord-bg text-discord-text antialiased;
+  }
+}
+
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0e14; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d3748; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a5568; 
+}
+
+/* New Vibe Styles */
+.hero-gradient {
+  background: linear-gradient(to bottom, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.8) 70%, rgba(11, 14, 20, 1) 100%);
+}
+
+.neon-text-blue {
+  text-shadow: 0 0 10px rgba(0, 245, 255, 0.5), 0 0 20px rgba(0, 245, 255, 0.3);
+}
+
+.neon-border-purple {
+  box-shadow: inset 0 0 10px rgba(138, 43, 226, 0.4), 0 0 15px rgba(138, 43, 226, 0.2);
+}
+
+/* Utilities */
+.glass-panel {
+  @apply bg-discord-sidebar/90 backdrop-blur-md border border-white/5 shadow-xl;
+}
