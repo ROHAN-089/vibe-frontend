@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/react';
 import LocationGate from './components/LocationGate';
 import RoomsList from './components/RoomsList';
 import CreateRoomModal from './components/CreateRoomModal';
@@ -65,6 +66,7 @@ function App() {
           </div>
         )}
       </AnimatePresence>
+      <Analytics />
     </div>
   );
 }
